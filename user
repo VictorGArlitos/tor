@@ -1,0 +1,229 @@
+<?php
+include("connection.php"); // Database connection
+
+// Fetch all uploaded artworks
+$sql = "SELECT * FROM art ORDER BY date_posted DESC";
+$result = $con->query($sql);
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TintaPh Art Wall</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #121212;
+            color: white;
+        }
+        .navbar {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        .art-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .art-post {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            transition: 0.3s;
+        }
+        .art-post:hover {
+            transform: scale(1.05);
+        }
+        .art-post img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .art-info {
+            padding: 10px;
+            font-size: 14px;
+            text-align: left;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .btn-like, .btn-comment {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-like:hover, .btn-comment:hover {
+            color: #ff6b6b;
+        }
+
+        /* Floating Upload Button */
+        .upload-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            transition: 0.3s;
+            z-index: 1000;
+        }
+        .upload-btn:hover {
+            background: #f94a4a;
+            transform: scale(1.1);
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: black;
+            padding: 20px;
+            border-radius: 10px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .upload-form input, .upload-form textarea, .upload-form select {
+            width: 100%;
+            margin: 10px 0;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .submit-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #f94a4a;
+        }
+
+        .modal-content h2, label {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand text-white" href="#">TintaPh</a>
+        </div>
+    </nav>
+
+    <!-- Art Gallery Grid -->
+    <div class="container mt-5 pt-5">
+        <h2 class="text-center my-4">Explore Digital Art</h2>
+        <div class="art-container">
+            <?php while ($row = $result->fetch_assoc()) : ?>
+                <div class="art-post">
+                    <img src="<?= htmlspecialchars($row['image_path']) ?>" alt="<?= htmlspecialchars($row['art_name']) ?>">
+                    <div class="art-info">
+                        <h5><?= htmlspecialchars($row['art_name']) ?></h5>
+                        <p><strong>Category:</strong> <?= htmlspecialchars($row['art_categ_id']) ?></p>
+                        <p><?= htmlspecialchars($row['art_des']) ?></p>
+                        <p><small><strong>Date Posted:</strong> <?= htmlspecialchars($row['date_posted']) ?></small></p>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-like">❤️ Like</button>
+                        <button class="btn-comment">💬 Comment</button>
+                    </div>
+                </div>
+            <?php endwhile; ?>
+        </div>
+    </div>
+
+    <!-- Floating Upload Button -->
+    <button class="upload-btn" onclick="openModal()">⬆️</button>
+
+    <!-- Modal Popup -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">✖</span>
+            <h2>Upload Your Artwork</h2>
+            <form action="upload.php" method="POST" enctype="multipart/form-data" class="upload-form">
+                <label>Art Upload:</label>
+                <input type="file" name="my_image" accept="image/*" required>
+                <label>Category:</label>
+                <select name="category" required>
+                    <option value="Digital Art">Digital Art</option>
+                    <option value="Traditional Art">Traditional Art</option>
+                    <option value="Photography">Photography</option>
+                    <option value="Mixed Media">Mixed Media</option>
+                </select>
+                <label>Art Name:</label>
+                <input type="text" name="art_name" required>
+                <label>Description:</label>
+                <textarea name="description" required></textarea>
+                
+                <button type="submit" class="submit-btn">Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById("uploadModal").style.display = "flex";
+            document.getElementById("datePosted").valueAsDate = new Date();
+        }
+        function closeModal() {
+            document.getElementById("uploadModal").style.display = "none";
+        }
+    </script>
+
+</body>
+</html>

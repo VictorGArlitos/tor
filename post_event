@@ -1,0 +1,41 @@
+<?php
+include("connection.php"); // Include your database connection
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Retrieve and sanitize the form data
+    $event_name  = trim($_POST['event_name']);
+    $category    = trim($_POST['category']);
+    $venue       = trim($_POST['venue']);
+    $start_date  = trim($_POST['start_date']);  // Format: YYYY-MM-DD
+    $end_date    = trim($_POST['end_date']);      // Format: YYYY-MM-DD
+    $start_time  = trim($_POST['start_time']);      // Format: HH:MM (or HH:MM:SS)
+    $end_time    = trim($_POST['end_time']);        // Format: HH:MM (or HH:MM:SS)
+    $description = trim($_POST['description']);
+
+    // Optional: Validate that the start date is before or equal to the end date
+    if (strtotime($start_date) > strtotime($end_date)) {
+        echo "Error: Start date must be before or equal to the end date.";
+        exit;
+    }
+
+    // Prepare the INSERT statement
+    $stmt = $con->prepare("INSERT INTO eventss (event_name, category, venue, event_start_date, event_end_date, event_start_time, event_end_time, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    if (!$stmt) {
+        die("Prepare failed: " . $con->error);
+    }
+
+    // Bind parameters and execute the statement
+    $stmt->bind_param("ssssssss", $event_name, $category, $venue, $start_date, $end_date, $start_time, $end_time, $description);
+    if ($stmt->execute()) {
+        // Redirect back to event.php on success
+        header("Location: event.php");
+        exit;
+    } else {
+        echo "Error executing query: " . $stmt->error;
+    }
+    $stmt->close();
+} else {
+    header("Location: event.php");
+    exit;
+}
+?>
